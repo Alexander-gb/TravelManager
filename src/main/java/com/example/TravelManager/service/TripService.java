@@ -2,6 +2,7 @@ package com.example.TravelManager.service;
 
 import com.example.TravelManager.model.Trip;
 import com.example.TravelManager.repositroy.TripRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -13,7 +14,6 @@ public class TripService {
         this.tripRepository = tripRepository;
     }
 
-
     public List<Trip> getAllTrips() {
         return tripRepository.findAll();
     }
@@ -22,6 +22,7 @@ public class TripService {
         return tripRepository.findById(id).orElse(null);
     }
 
+    @Transactional
     public Trip saveTrip(Trip trip) {
         return tripRepository.save(trip);
     }
