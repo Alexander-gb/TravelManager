@@ -5,8 +5,10 @@ import com.example.TravelManager.service.TripService;
 import org.springframework.web.bind.annotation.*;
 
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.logging.Logger;
+
 
 @RestController
 @RequestMapping("/api/trips")
@@ -50,5 +52,13 @@ public class TripController {
     public void deleteTrip(@PathVariable Long id) {
         tripService.deleteTrip(id);
         logger.info("Deleted trip with ID: " + id);
+    }
+    @GetMapping("/filter")
+    public List<Trip> filterTrips(
+            @RequestParam(required = false) LocalDate startDate,
+            @RequestParam(required = false) LocalDate endDate,
+            @RequestParam(required = false) String destination) {
+        logger.info("Filtering trips with startDate: " + startDate + ", endDate: " + endDate + ", destination: " + destination);
+        return tripService.filterTrips(startDate, endDate, destination);
     }
 }
