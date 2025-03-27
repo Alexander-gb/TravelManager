@@ -1,19 +1,23 @@
 package com.example.TravelManager.controller;
 
+import com.example.TravelManager.dto.TripDTO;
+import com.example.TravelManager.exception.NotFoundException;
 import com.example.TravelManager.model.Trip;
 import com.example.TravelManager.service.TripService;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
+import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.logging.Logger;
 
-
+@Slf4j
 @RestController
 @RequestMapping("/api/trips")
 public class TripController {
-    private static final Logger logger = Logger.getLogger(TripController.class.getName());
     private final TripService tripService;
 
     public TripController(TripService tripService) {
@@ -22,43 +26,50 @@ public class TripController {
 
     @GetMapping
     public List<Trip> getAllTrips() {
+        log.info("Fetching all trips");
         return tripService.getAllTrips();
     }
 
     @GetMapping("/{id}")
     public Trip getTripById(@PathVariable Long id) {
+        log.info("Fetching trip with ID: {}", id);
         return tripService.getTripById(id);
     }
 
     @PostMapping
-    public Trip createTrip(@RequestBody Trip trip) {
-        logger.info("Received trip: " + trip);
-        Trip savedTrip = tripService.saveTrip(trip);
-        logger.info("Saved trip: " + savedTrip);
-        return savedTrip;
+    @ResponseStatus(HttpStatus.CREATED)
+    public Trip createTrip(@Validated @RequestBody TripDTO tripDTO) {
+        log.info("Creating new trip: {}", tripDTO);
+        Trip trip = new Trip();
+        BeanUtils.copyProperties(tripDTO, trip);
+        return tripService.saveTrip(trip);
     }
 
-
     @PutMapping("/{id}")
-    public Trip updateTrip(@PathVariable Long id, @RequestBody Trip trip) {
-        Trip existingTrip = tripService.getTripById(id);
-        existingTrip.setDestination(trip.getDestination());
-        existingTrip.setStartDate(trip.getStartDate());
-        existingTrip.setEndDate(trip.getEndDate());
+    public Trip updateTrip(@PathVariable Long id, @Validated @RequestBody TripDTO tripDTO) {
+        log.info("Updating trip with ID {}: {}", id, tripDTO);
+        Trip existingTrip = tripService.getTripById(id); // сервис сам выбрасывает исключение
+
+        BeanUtils.copyProperties(tripDTO, existingTrip, "id", "user");
         return tripService.saveTrip(existingTrip);
     }
 
     @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteTrip(@PathVariable Long id) {
+        log.info("Deleting trip with ID: {}", id);
+        if (!tripService.existsById(id)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Trip not found");
+        }
         tripService.deleteTrip(id);
-        logger.info("Deleted trip with ID: " + id);
     }
+
     @GetMapping("/filter")
     public List<Trip> filterTrips(
             @RequestParam(required = false) LocalDate startDate,
             @RequestParam(required = false) LocalDate endDate,
             @RequestParam(required = false) String destination) {
-        logger.info("Filtering trips with startDate: " + startDate + ", endDate: " + endDate + ", destination: " + destination);
+        log.info("Filtering trips with startDate: {}, endDate: {}, destination: {}", startDate, endDate, destination);
         return tripService.filterTrips(startDate, endDate, destination);
     }
 }
